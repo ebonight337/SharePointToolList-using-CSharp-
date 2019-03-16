@@ -3,7 +3,7 @@ using SP = Microsoft.SharePoint.Client;
 
 
 public async Task<SP.List> CreateListAsync(string listName, string targetListTemplate, string listUrl, string Description = null) {
-            jobLog.Write("リストの作成を実施します => " + listName);
+            Console.Write("リストの作成を実施します => " + listName);
             try {
                 // 存在確認
                 SP.ListCollection lists = _context.Web.Lists;
@@ -12,7 +12,7 @@ public async Task<SP.List> CreateListAsync(string listName, string targetListTem
 
                 foreach (SP.List oList in lists) {
                     if (oList.Title == listName) {
-                        jobLog.Write("作成しようとしているリストはすでに存在します =>" + listName);
+                        Console.Write("作成しようとしているリストはすでに存在します =>" + listName);
                         throw new Exception("作成しようとしているリストはすでに存在します =>" + listName);
                     }
                 }
@@ -40,27 +40,27 @@ public async Task<SP.List> CreateListAsync(string listName, string targetListTem
                 await _context.ExecuteQueryAsync();
 
             } catch (Exception e) {
-                jobLog.Write("リストの作成中にエラーが発生しましたエラーを確認してください\r\n" + e);
+                Console.Write("リストの作成中にエラーが発生しましたエラーを確認してください\r\n" + e);
                 throw new Exception("リストの作成でエラーが発生しましたエラーを確認してください");
             }
             try {
-                jobLog.Write("リストの作成が完了しました => " + listName);
+                Console.Write("リストの作成が完了しました => " + listName);
                 return _context.Web.Lists.GetByTitle(listName);
             } catch (Exception e) {
-                jobLog.Write("作成したリストを取得できませんでしたエラーを確認してください\r\n" + e);
+                Console.Write("作成したリストを取得できませんでしたエラーを確認してください\r\n" + e);
                 throw new Exception("作成したリストを取得できませんでしたエラーを確認してください");
             }
         }
 
         public async Task<bool> DeleteListAsync(string listName) {
-            jobLog.Write("リストの削除を実施します => " + listName);
+            Console.Write("リストの削除を実施します => " + listName);
             // 存在確認
             SP.ListCollection lists = _context.Web.Lists;
             try {
                 _context.Load(lists);
                 await _context.ExecuteQueryAsync();
             } catch (Exception e) {
-                jobLog.Write("リストの取得でエラーが発生しました。\r\n" + e);
+                Console.Write("リストの取得でエラーが発生しました。\r\n" + e);
                 throw new Exception("リストの取得でエラーが発生しました。エラーを確認してください。");
             }
 
@@ -71,15 +71,15 @@ public async Task<SP.List> CreateListAsync(string listName, string targetListTem
                         deleteList.DeleteObject();
                         await _context.ExecuteQueryAsync();
                     } catch (Exception e) {
-                        jobLog.Write("リスト削除処理で以下のエラーが発生しました\r\n" + e);
+                        Console.Write("リスト削除処理で以下のエラーが発生しました\r\n" + e);
                         // throw new Exception("リスト削除処理で以下のエラーが発生しましたログを確認してください");
                     }
-                    jobLog.Write("リストの削除が完了しました => " + listName);
+                    Console.Write("リストの削除が完了しました => " + listName);
                     return true;
                 }
             }
 
-            jobLog.Write("削除対象のリストが存在しないため、削除処理をパスします =>" + listName);
+            Console.Write("削除対象のリストが存在しないため、削除処理をパスします =>" + listName);
             Console.WriteLine("削除対象のリストが存在しないため、削除処理をパスします =>" + listName);
             return true;
 

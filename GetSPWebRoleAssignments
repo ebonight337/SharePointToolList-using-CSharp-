@@ -1,13 +1,4 @@
-using System;
-using System.Net;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security;
-using System.Threading;
-using System.Threading.Tasks;
 using SP = Microsoft.SharePoint.Client;
-
 
 /// <summary>
 /// SPグループ状況確認

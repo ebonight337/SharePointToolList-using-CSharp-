@@ -1,7 +1,6 @@
 using SP = Microsoft.SharePoint.Client;
 
 
-
 public async Task<SP.List> CreateListAsync(string listName, string targetListTemplate, string listUrl, string Description = null) {
             Console.Write("リストの作成を実施します => " + listName);
             try {

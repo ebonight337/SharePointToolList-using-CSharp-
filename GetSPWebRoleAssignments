@@ -1,11 +1,5 @@
 using SP = Microsoft.SharePoint.Client;
 
-/// <summary>
-/// SPグループ状況確認
-/// </summary>
-/// <param name="weburl"></param>
-/// <param name="username"></param>
-/// <param name="password"></param>
 public async Task<List<string>> GetSPWebRoleAssignments(string weburl, string username, string password)
 {
     Console.WriteLine("=== サイトに権限が付与されている全ユーザーを取得します。 => " + weburl +" ===");

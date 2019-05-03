@@ -35,12 +35,60 @@ namespace SharePointMaintenanceToolSample {
             _context.Credentials = new SP.SharePointOnlineCredentials(mailAddress, _secureString);
         }
 
-
-
         /*
          * ここに利用するメソッドを記載していきます。
+         * 今回はリスト作成のメソッドをサンプルとして記載します。
          */
          
+         public async Task<SP.List> CreateListAsync(string listName, string targetListTemplate, string listUrl, string Description = null) {
+            Console.Write("リストの作成を実施します => " + listName);
+            try {
+                // 存在確認
+                SP.ListCollection lists = _context.Web.Lists;
+                _context.Load(lists);
+                await _context.ExecuteQueryAsync();
+
+                foreach (SP.List oList in lists) {
+                    if (oList.Title == listName) {
+                        Console.Write("作成しようとしているリストはすでに存在します =>" + listName);
+                        throw new Exception("作成しようとしているリストはすでに存在します =>" + listName);
+                    }
+                }
+
+                // リストテンプレートを取得
+                SP.ListTemplateCollection templates = _context.Site.GetCustomListTemplates(_context.Web);
+                _context.Load(templates);
+                await _context.ExecuteQueryAsync();
+
+                SP.ListCreationInformation listCreationInfo = new SP.ListCreationInformation();
+                listCreationInfo.Title = listUrl;
+                if (Description != null) {
+                    listCreationInfo.Description = Description;
+                }
+
+                SP.ListTemplate listTemplate = templates.First(listTemp => listTemp.Name == targetListTemplate);
+                listCreationInfo.ListTemplate = listTemplate;
+                listCreationInfo.TemplateFeatureId = listTemplate.FeatureId;
+                listCreationInfo.TemplateType = listTemplate.ListTemplateTypeKind;
+                var createList = _context.Web.Lists.Add(listCreationInfo);
+
+                // リスト名変更
+                createList.Title = listName;
+                createList.Update();
+                await _context.ExecuteQueryAsync();
+
+            } catch (Exception e) {
+                Console.Write("リストの作成中にエラーが発生しましたエラーを確認してください\r\n" + e);
+                throw new Exception("リストの作成でエラーが発生しましたエラーを確認してください");
+            }
+            try {
+                Console.Write("リストの作成が完了しました => " + listName);
+                return _context.Web.Lists.GetByTitle(listName);
+            } catch (Exception e) {
+                Console.Write("作成したリストを取得できませんでしたエラーを確認してください\r\n" + e);
+                throw new Exception("作成したリストを取得できませんでしたエラーを確認してください");
+            }
+        }
             
 
         /// <summary>

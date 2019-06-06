@@ -117,5 +117,14 @@ namespace CreateandRemoveList
             return true;
         }
 
+        /// <summary>
+        /// インスタンスの破棄処理を行います
+        /// </summary>
+        public void Dispose()
+        {
+            _context?.Dispose();
+            _secureString?.Dispose();
+        }
+
     }
 }

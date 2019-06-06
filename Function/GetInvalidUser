@@ -17,9 +17,6 @@ namespace GetInvalidUser
     {
         private readonly SP.ClientContext _context;
         private readonly SecureString _secureString;
-        static Logger jobLog = new Logger("Log//AuthSync_DetailLog_" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".txt", System.Text.Encoding.UTF8);
-        static Logger errorLog = new Logger(("Log//ErrorListItem_" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".csv"), System.Text.Encoding.UTF8);
-
         public SP.ClientContext ClientContext => _context;
 
 
@@ -49,31 +46,26 @@ namespace GetInvalidUser
         {
             try
             {
-
-                jobLog.Write("=== サイトに権限が付与されている全ユーザーを取得します。 => " + weburl +" ===");
                 SP.Web RootWeb = _context.Web;
                 _context.Load(RootWeb, w => w.HasUniqueRoleAssignments, w => w.Url, w => w.ServerRelativeUrl);
                 _context.Load(RootWeb.RoleAssignments);
-                await _context.ExecuteQueryWithIncrementalRetry();
+                await _context.ExecuteQueryAsync();
 
                 List<string> sb = new List<string>();
                 foreach (SP.RoleAssignment ra in RootWeb.RoleAssignments)
                 {
                     _context.Load(ra.Member);
-                    await _context.ExecuteQueryWithIncrementalRetry();
-
-                    jobLog.Write(ra.Member.LoginName + " : " + ra.Member.PrincipalType);
+                    await _context.ExecuteQueryAsync();
 
                     if (ra.Member.PrincipalType.ToString() == "SharePointGroup")
                     {
                         SP.Group groupMembers = _context.Web.SiteGroups.GetByName(ra.Member.Title);
                         _context.Load(groupMembers, group => group.Users);
-                        await _context.ExecuteQueryWithIncrementalRetry();
+                        await _context.ExecuteQueryAsync();
 
                         foreach(SP.User usr in groupMembers.Users)
                         {
                             sb.Add(usr.LoginName);
-                            jobLog.Write("  " + usr.LoginName + " : " + usr.PrincipalType);
                         }
 
                     }
@@ -96,7 +88,7 @@ namespace GetInvalidUser
                         {
                             SP.UserProfiles.PeopleManager peopleManager = new SP.UserProfiles.PeopleManager(_context);
                             var managerData = peopleManager.GetUserProfileProperties(i);
-                            await _context.ExecuteQueryWithIncrementalRetry();
+                            await _context.ExecuteQueryAsync();
 
                         }
                         else
@@ -106,7 +98,6 @@ namespace GetInvalidUser
                     }
                     catch (System.Exception e)
                     {
-                            jobLog.Write("このユーザーは存在しません" + e);
                             errorLog.WriteCSV(i);
                         continue;
                     }
@@ -116,7 +107,6 @@ namespace GetInvalidUser
             }
             catch(System.Exception e)
             {
-                jobLog.Write("ユーザー情報を取得できませんでした。" + e);
                 return null;
             }
         }
@@ -131,95 +121,5 @@ namespace GetInvalidUser
         }
 
     } // End _context
-
-    #region ExecuteQueryを実行する際に挟むメソッドSPの「調整」対策
-    static class ExecuteQuery
-    {
-        /// <summary>
-        /// ExecuteQueryを実行する際に挟むメソッドSPの「調整」対策
-        /// </summary>
-        /// <param name="clientContext"></param>
-        /// <param name="retryCount"></param>
-        /// <param name="delay"></param>
-        public static async Task ExecuteQueryWithIncrementalRetry(this SP.ClientContext clientContext, int retryCount = 5, int delay = 30000)
-        {
-            int retryAttempts = 0;
-            int backoffInterval = delay;
-            int retryAfterInterval = 0;
-            bool retry = false;
-            SP.ClientRequestWrapper wrapper = null;
-            if (retryCount <= 0)
-                throw new ArgumentException("0より大きい試行回数を設定してください");
-            if (delay <= 0)
-                throw new ArgumentException("0より大きい遅延を設定してください");
-
-            // 再試行の再試行回数をモニター
-            while (retryAttempts < retryCount)
-            {
-                try
-                {
-                    if (!retry)
-                    {
-                        await clientContext.ExecuteQueryAsync();
-                        return;
-                    }
-                    else
-                    {
-                        // リクエストを再試行する
-                        if (wrapper != null && wrapper.Value != null)
-                        {
-                            clientContext.RetryQuery(wrapper.Value);
-                            return;
-                        }
-                    }
-                }
-                catch (WebException ex)
-                {
-                    var response = ex.Response as HttpWebResponse;
-                    // Check if request was throttled - http status code 429
-                    // Check is request failed due to server unavailable - http status code 503
-                    if (response != null && (response.StatusCode == (HttpStatusCode)429 || response.StatusCode == (HttpStatusCode)503))
-                    {
-                        wrapper = (SP.ClientRequestWrapper)ex.Data["ClientRequest"];
-                        retry = true;
-
-                        // 利用可能な場合には再試行後のヘッダーを使用する
-                        string retryAfterHeader = response.GetResponseHeader("Retry-After");
-                        if (!string.IsNullOrEmpty(retryAfterHeader))
-                        {
-                            if (!Int32.TryParse(retryAfterHeader, out retryAfterInterval))
-                            {
-                                retryAfterInterval = backoffInterval;
-                            }
-                        }
-                        else
-                        {
-                            retryAfterInterval = backoffInterval;
-                        }
-
-                        // 指定されたミリ秒分遅らせる
-                        Thread.Sleep(retryAfterInterval);
-
-                        // Increase counters
-                        retryAttempts++;
-                        backoffInterval = backoffInterval * 2;
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-            }
-            throw new MaximumRetryAttemptedException($"Maximum retry attempts {retryCount}, has be attempted.");
-        }
-
-        [Serializable]
-        public class MaximumRetryAttemptedException : Exception
-        {
-            public MaximumRetryAttemptedException(string message) : base(message) { }
-        }
-
-    }
-    #endregion
 
 }

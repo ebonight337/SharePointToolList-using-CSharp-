@@ -1,7 +1,41 @@
+using System;
+using System.Net;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security;
+using System.Threading;
+using System.Threading.Tasks;
 using SP = Microsoft.SharePoint.Client;
 
+namespace CreateandRemoveList
+{
+    /// <summary>
+    /// SharePoint のデータ操作機能を提供します
+    /// </summary>
+    public class SharePointDataService:IDisposable
+    {
+        private readonly SP.ClientContext _context;
+        private readonly SecureString _secureString;
+        public SP.ClientContext ClientContext => _context;
 
-public async Task<SP.List> CreateListAsync(string listName, string targetListTemplate, string listUrl, string Description = null) {
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="sitePath">データ操作対象のサイト URL</param>
+        /// <param name="mailAddress">データ操作を行うユーザーメールアドレス</param>
+        /// <param name="password">データ操作を行うユーザーパスワード</param>
+        public SharePointDataService(string sitePath, string mailAddress, string password) {
+            _context = new SP.ClientContext(sitePath);
+
+            _secureString = new SecureString();
+            password.ToList().ForEach(c => _secureString.AppendChar(c));
+            _context.Credentials = new SP.SharePointOnlineCredentials(mailAddress, _secureString);
+        }
+
+
+        public async Task<SP.List> CreateListAsync(string listName, string targetListTemplate, string listUrl, string Description = null) {
             Console.Write("リストの作成を実施します => " + listName);
             try {
                 // 存在確認
@@ -81,5 +115,7 @@ public async Task<SP.List> CreateListAsync(string listName, string targetListTem
             Console.Write("削除対象のリストが存在しないため、削除処理をパスします =>" + listName);
             Console.WriteLine("削除対象のリストが存在しないため、削除処理をパスします =>" + listName);
             return true;
-
         }
+
+    }
+}

@@ -58,7 +58,6 @@ public async Task<object> AddItemToListAsync(SP.List spList, IDictionary<string,
                     newItem.DeleteObject();
                     throw new NullReferenceException($"指定されたファイルが存在しません => {filePath}");
                 }
-
                 var fileStream = new FileStream(filePath, FileMode.Open);
 
                 if (fileStream.Length == 0)
@@ -66,17 +65,14 @@ public async Task<object> AddItemToListAsync(SP.List spList, IDictionary<string,
                     newItem.DeleteObject();
                     throw new NullReferenceException($"ファイル容量が0です => {filePath}");
                 }
-
                 fileStreamList.Add(fileStream);
                 var attachmentInfo = new SP.AttachmentCreationInformation
                 {
                     ContentStream = fileStream,
                     FileName = Path.GetFileName(filePath)
                 };
-
                 newItem.AttachmentFiles.Add(attachmentInfo);
             }
-
         }
 
         // アイテム追加処理(添付ファイル前に実施すると、更新者が実行アカウントになってしまう)
@@ -91,12 +87,6 @@ public async Task<object> AddItemToListAsync(SP.List spList, IDictionary<string,
             {
                 newItem[keyValue.Key] = keyValue.Value;
             }
-            // ColumNameとしてCreatedを入れているのにnullにすることはできない
-            // if ((keyValue.Key.ToString() == "Created") && ((keyValue.Value.Equals(""))))
-            // {
-            //     newItem.DeleteObject();
-            //     throw new Exception("アイテムの作成日時プロパティが不足しています");
-            // }
         }
 
         newItem.Update();
